@@ -72,7 +72,7 @@ service = Splunk::connect(
 service.login
 
 last_date = (DateTime.strptime(GDS.new.latest.date, "%Y-%m-%d %H:%M:%S ") + 7/24.0).iso8601
-#last_date = "2015-06-03T12:00:00+7:00"
+#last_date = "2015-06-15T12:00:00+7:00"
 
 puts "getting splunk data after: #{last_date}"
 
