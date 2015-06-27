@@ -1,6 +1,7 @@
 require 'splunk-sdk-ruby'
 require 'json'
 require 'httparty'
+require 'byebug'
 
 class ElasticSearch
   include HTTParty
@@ -108,8 +109,8 @@ service = Splunk::connect(
 
 service.login
 
-#last_date = (DateTime.strptime(GDS.new.latest.date, "%Y-%m-%d %H:%M:%S ") + 7/24.0).iso8601
-#end_date = "now"
+#last_date = ARGV[5] || (DateTime.strptime(GDS.new.latest.date, "%Y-%m-%d %H:%M:%S ")).iso8601
+#end_date = ARGV[6] || "now"
 last_date = "2015-06-08T00:00:00+7:00"
 end_date = "2015-06-12T12:21:24+7:00"
 
