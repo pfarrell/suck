@@ -26,8 +26,7 @@ class GDS
   include HTTParty
   attr_accessor :host, :group, :date, :data, :tags
 
-#  def initialize(host="http://prosper:Password23@prosper-gds.herokuapp.com")
-  def initialize(host="http://prosper:Password23@np32.c1.dev:9292")
+  def initialize(host="http://np32.c1.dev:9292")
     @host = host
     @group = "gds"
     @data = {}
