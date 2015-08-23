@@ -8,7 +8,7 @@ class ElasticSearch
   include HTTParty
   attr_accessor :host
 
-  def initialize(host="http://np32.c1.dev:9200", index="gds", type="timing")
+  def initialize(host="http://10.121.184.107:9200", index="gds", type="timing")
     @host = host
     @index = index
     @type = type
@@ -75,6 +75,7 @@ class GDS
   end
 
   def self.save(json,iter, callback)
+    #byebug
     http = EventMachine::HttpRequest.new("http://np32.c1.dev:9292/entries/gds").post body: json
     http.callback { callback.call(http.response, iter)}
     #self.class.post("#{host}/entries/#{group}", body: self.to_json)
@@ -129,6 +130,7 @@ readers= Splunk::MultiResultsReader.new(stream)
 es = ElasticSearch.new
 
 def db_save_callback(json, iter)
+  #byebug
   obj= massage(json)
   http = EventMachine::HttpRequest.new(request(obj["id"])).put body: obj.to_json()
   iter.next
@@ -144,9 +146,10 @@ cnt = 0
 EventMachine.run do
   puts "em loop"
   readers.each do |reader|
-    EM::Iterator.new(reader, 30).each do |result, iter|
+    EM::Iterator.new(reader, 25).each do |result, iter|
     #reader.each do |result|
         print "/"
+        #byebug
         gds = GDS.parse(result["_raw"])
         body = GDS.save(gds.to_json, iter, method(:db_save_callback))
         cnt += 1
