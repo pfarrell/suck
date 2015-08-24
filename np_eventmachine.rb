@@ -132,7 +132,10 @@ def db_save_callback(json, iter)
   obj= massage(json)
   http = EventMachine::HttpRequest.new(request(obj["id"])).put body: obj.to_json()
   iter.next
-  http.callback { print '\\' }
+  http.callback { 
+    sleep 0.005
+    print '\\' 
+  }
   http.errback { print http.error; EM.stop }
 end
 
@@ -144,7 +147,7 @@ cnt = 0
 EventMachine.run do
   puts "em loop"
   readers.each do |reader|
-    EM::Iterator.new(reader, 30).each do |result, iter|
+    EM::Iterator.new(reader, 20).each do |result, iter|
     #reader.each do |result|
         print "/"
         gds = GDS.parse(result["_raw"])
