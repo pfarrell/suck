@@ -147,7 +147,7 @@ cnt = 0
 EventMachine.run do
   puts "em loop"
   readers.each do |reader|
-    EM::Iterator.new(reader, 20).each do |result, iter|
+    EM::Iterator.new(reader, 25).each do |result, iter|
     #reader.each do |result|
         print "/"
         gds = GDS.parse(result["_raw"])
