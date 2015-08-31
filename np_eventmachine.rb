@@ -25,7 +25,7 @@ end
 
 class GDS
   include HTTParty
-  attr_accessor :host, :group, :date, :data, :tags
+  attr_accessor :index, :host, :group, :date, :data, :tags
 
   def initialize(host="http://np32.c1.dev:9292")
     @host = host
@@ -67,11 +67,12 @@ class GDS
     gds.date = hsh["date"]
     gds.data = hsh["data"]
     gds.tags = hsh["tags"]
+    gds.index = hsh["index"]
     gds
   end
 
   def to_json(opts={})
-    {group: group, date: date, data: data, tags: tags}.to_json(opts)
+    {group: group, date: date, data: data, tags: tags, index: index}.to_json(opts)
   end
 
   def self.save(json,iter, callback)
@@ -96,11 +97,11 @@ def massage(json_str)
     ret = obj.delete_if do |k,v|
       ["data", "created_at", "updated_at"].select{|x| x == k}.size > 0
     end
+    ret["index"] = "gds-#{ret["date"].sub(/ .*/, '')}"
     ret["date"].sub!(/ /, "T")
     ret["date"].sub!(/ .*/, "")
     ret["timing"] = ret["timing"].to_f
   rescue
-    byebug
   end
   ret
 end
@@ -130,17 +131,16 @@ es = ElasticSearch.new
 
 def db_save_callback(json, iter)
   obj= massage(json)
-  http = EventMachine::HttpRequest.new(request(obj["id"])).put body: obj.to_json()
+
+  http = EventMachine::HttpRequest.new(request(obj["id"], obj["index"])).put body: obj.to_json()
   iter.next
-  http.callback { 
-    sleep 0.005
-    print '\\' 
-  }
+  
+  http.callback { }
   http.errback { print http.error; EM.stop }
 end
 
-def request(id)
-  "http://10.121.184.107:9200/gds/timing/#{id}"
+def request(id, index)
+  "http://np32.c1.dev:9200/#{index}/timing/#{id}"
 end
 
 cnt = 0
@@ -148,15 +148,18 @@ EventMachine.run do
   puts "em loop"
   readers.each do |reader|
     EM::Iterator.new(reader, 25).each do |result, iter|
-    #reader.each do |result|
-        print "/"
-        gds = GDS.parse(result["_raw"])
-        body = GDS.save(gds.to_json, iter, method(:db_save_callback))
-        cnt += 1
+      gds = GDS.parse(result["_raw"])
+      body = GDS.save(gds.to_json, iter, method(:db_save_callback))
+      cnt += 1
+      if cnt % 100 == 0
+        40.times {|i| print "\b" }
+        print "#{gds.date}: #{cnt}"
+      end
     end
   end
 end
-print "#{cnt}"
+print "\n#{cnt}"
+print "done"
 EM.stop
 print "\n"
 
