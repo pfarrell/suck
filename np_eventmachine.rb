@@ -151,9 +151,9 @@ EventMachine.run do
       gds = GDS.parse(result["_raw"])
       body = GDS.save(gds.to_json, iter, method(:db_save_callback))
       cnt += 1
-      if cnt % 100 == 0
-        40.times {|i| print "\b" }
-        print "#{gds.date}: #{cnt}"
+      if cnt % 1 == 0
+        #40.times {|i| print "\b" }
+        puts "#{gds.date}: #{cnt}"
       end
     end
   end
