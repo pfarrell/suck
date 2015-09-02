@@ -26,24 +26,25 @@ end
 
 class GDS
   include HTTParty
-  attr_accessor :id, :index, :host, :group, :date, :listing_id, :type, :method
+  attr_accessor :id, :index, :host, :date, :listing_id, :type, :method
 
   def initialize(host="http://np32.c1.dev:9292")
     @host = host
-    @group = "gds"
     @data = {}
     @tags = []
   end
 
   def self.from_str(str)
     gds = GDS.new
+    require 'byebug'
+    byebug
     hsh = str.match(/\[(?<date>.*)\]\[(?<type>.*)\].* (?<listing_id>[0-9]*) (?<message>.*)/)
     msg = gds.massage(hsh["type"], hsh["message"])
-    gds.index = "test-gds-#{hsh["date"].sub(/ .*/, '')}"
+    gds.index = "gds-#{hsh["date"].sub(/ .*/, '')}"
     gds.date = hsh["date"].sub(/ /, "T").sub(/ .*/, "")
     gds.listing_id = hsh["listing_id"]
-    gds.type = msg["type"]
-    gds.method = msg["method"]
+    gds.type = msg[:type]
+    gds.method = msg[:method]
     gds.id = Digest::SHA1.hexdigest "#{gds.date}|#{gds.listing_id}|#{gds.method}"
     gds
   end
@@ -66,19 +67,13 @@ class GDS
   end
 
   def to_json(opts={})
-    {id: id, group: group, date: date, host: host, listing_id: listing_id, method: method, type: type, index: index}.to_json(opts)
+    {id: id, date: date, host: host, listing_id: listing_id, method: method, type: type, index: index}.to_json(opts)
   end
 
   def self.save(json,iter, callback)
     http = EventMachine::HttpRequest.new("http://np32.c1.dev:9292/entries/gds").post body: json
     http.callback { callback.call(http.response, iter)}
   end
-
-  def latest
-    json = self.class.get("#{host}/entries/#{group}/latest").body
-    from_json(json)
-  end
-  
 end
 
 def massage2(json_str)
@@ -123,16 +118,6 @@ readers= Splunk::MultiResultsReader.new(stream)
 
 es = ElasticSearch.new
 
-def es_save_callback(json, iter)
-  obj= massage2(json)
-
-  http = EventMachine::HttpRequest.new(request(obj["id"], obj["index"])).put body: obj.to_json()
-  iter.next
-  
-  http.callback { }
-  http.errback { print http.error; EM.stop }
-end
-
 def request(id, index)
   "http://np32.c1.dev:9200/#{index}/timing/#{id}"
 end
@@ -141,6 +126,7 @@ cnt = 0
 EventMachine.run do
   puts "em loop"
   readers.each do |reader|
+    puts 'reader'
     EM::Iterator.new(reader, 25).each do |result, iter|
       gds = GDS.from_str(result["_raw"])
 
@@ -152,7 +138,7 @@ EventMachine.run do
       http.errback { print http.error; EM.stop }
 
       cnt += 1
-      if cnt % 2 == 0
+      if cnt % 100 == 0
         40.times {|i| print "\b" }
         print "#{gds.date}: #{cnt}"
       end
