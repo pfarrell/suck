@@ -5,28 +5,28 @@ require 'em-http-request'
 require 'digest/sha1'
 require 'byebug'
 
-class ElasticSearch
-  include HTTParty
-  attr_accessor :host
-
-  def initialize(host="http://np32.c1.dev:9200", index="gds", type="timing")
-    @host = host
-    @index = index
-    @type = type
-  end
-
-  def url(index, type, id)
-    "#{@host}/#{index}/#{type}/#{id}"
-  end
-
-  def request(id)
-    url(@index, @type, id)
-  end
-end
+#class ElasticSearch
+#  include HTTParty
+#  attr_accessor :host
+#
+#  def initialize(host="http://np32.c1.dev:9200", index="gds", type="timing")
+#    @host = host
+#    @index = index
+#    @type = type
+#  end
+#
+#  def url(index, type, id)
+#    "#{@host}/#{index}/#{type}/#{id}"
+#  end
+#
+#  def request(id)
+#    url(@index, @type, id)
+#  end
+#end
 
 class GDS
   include HTTParty
-  attr_accessor :id, :index, :host, :date, :listing_id, :type, :method
+  attr_accessor :id, :index, :host, :date, :listing_id, :method, :timing
 
   def initialize(host="http://np32.c1.dev:9292")
     @host = host
@@ -36,38 +36,35 @@ class GDS
 
   def self.from_str(str)
     gds = GDS.new
-    require 'byebug'
-    byebug
     hsh = str.match(/\[(?<date>.*)\]\[(?<type>.*)\].* (?<listing_id>[0-9]*) (?<message>.*)/)
-    msg = gds.massage(hsh["type"], hsh["message"])
+    msg = gds.massage(hsh["message"])
     gds.index = "gds-#{hsh["date"].sub(/ .*/, '')}"
     gds.date = hsh["date"].sub(/ /, "T").sub(/ .*/, "")
     gds.listing_id = hsh["listing_id"]
-    gds.type = msg[:type]
+    gds.timing = msg[:timing]
     gds.method = msg[:method]
     gds.id = Digest::SHA1.hexdigest "#{gds.date}|#{gds.listing_id}|#{gds.method}"
     gds
   end
 
-  def massage(type, msg)
-    return {error: msg} if type == "ERROR"
+  def massage(msg)
     execution=/(?<method>.*): PT(?<time>.*)S/
     hsh=msg.match(execution)
     {timing: hsh["time"], method: hsh["method"]}
   end
 
-  def from_json(json)
-    hsh = JSON.parse(json)
-    gds = GDS.new
-    gds.date = hsh["date"]
-    gds.data = hsh["data"]
-    gds.tags = hsh["tags"]
-    gds.index = hsh["index"]
-    gds
-  end
+#  def from_json(json)
+#    hsh = JSON.parse(json)
+#    gds = GDS.new
+#    gds.date = hsh["date"]
+#    gds.data = hsh["data"]
+#    gds.tags = hsh["tags"]
+#    gds.index = hsh["index"]
+#    gds
+#  end
 
   def to_json(opts={})
-    {id: id, date: date, host: host, listing_id: listing_id, method: method, type: type, index: index}.to_json(opts)
+    {id: id, date: date, host: host, listing_id: listing_id, method: method, index: index, timing: timing}.to_json(opts)
   end
 
   def self.save(json,iter, callback)
@@ -115,8 +112,6 @@ stream = service.create_export("search #{ARGV[4]}",
 )
 
 readers= Splunk::MultiResultsReader.new(stream)
-
-es = ElasticSearch.new
 
 def request(id, index)
   "http://np32.c1.dev:9200/#{index}/timing/#{id}"
