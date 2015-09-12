@@ -1,0 +1,33 @@
+{
+  "settings" : {
+    "number_of_shards" : 1
+  },
+  "mappings" : {
+    "timing": {
+      "properties": {
+        "date": {
+          "type": "date",
+          "format": "dateOptionalTime"
+        },
+        "host": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "index": {
+          "type": "string"
+        },
+        "listing_id": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "timing": {
+          "type": "double"
+        }
+      }
+    }
+  }
+}
