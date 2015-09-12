@@ -122,7 +122,7 @@ EventMachine.run do
   puts "em loop"
   readers.each do |reader|
     puts 'reader'
-    EM::Iterator.new(reader, 25).each do |result, iter|
+    EM::Iterator.new(reader, 30).each do |result, iter|
       gds = GDS.from_str(result["_raw"])
 
       http = EventMachine::HttpRequest.new(request(gds.id, gds.index)).put body: gds.to_json()
@@ -130,12 +130,15 @@ EventMachine.run do
       http.callback { 
         iter.next
       }
-      http.errback { print http.error; EM.stop }
+      http.errback { 
+        print http.error; 
+        #EM.stop 
+      }
 
       cnt += 1
       if cnt % 100 == 0
-        40.times {|i| print "\b" }
-        print "#{gds.date}: #{cnt}"
+       # 40.times {|i| print "\b" }
+        puts "#{gds.date}: #{cnt}"
       end
     end
   end
