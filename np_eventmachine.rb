@@ -131,7 +131,8 @@ es = ElasticSearch.new
 
 def db_save_callback(json, iter)
   obj= massage(json)
-
+  #require 'byebug'
+  #byebug
   http = EventMachine::HttpRequest.new(request(obj["id"], obj["index"])).put body: obj.to_json()
   iter.next
   
