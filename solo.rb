@@ -5,25 +5,6 @@ require 'em-http-request'
 require 'digest/sha1'
 require 'byebug'
 
-#class ElasticSearch
-#  include HTTParty
-#  attr_accessor :host
-#
-#  def initialize(host="http://np32.c1.dev:9200", index="gds", type="timing")
-#    @host = host
-#    @index = index
-#    @type = type
-#  end
-#
-#  def url(index, type, id)
-#    "#{@host}/#{index}/#{type}/#{id}"
-#  end
-#
-#  def request(id)
-#    url(@index, @type, id)
-#  end
-#end
-
 class GDS
   include HTTParty
   attr_accessor :id, :index, :host, :date, :listing_id, :method, :timing
@@ -50,7 +31,13 @@ class GDS
   def massage(msg)
     execution=/(?<method>.*): PT(?<time>.*)S/
     hsh=msg.match(execution)
-    {timing: hsh["time"], method: hsh["method"]}
+    #byebug if hsh["time"] =~ /.*M.*/
+    {timing: convert_to_seconds(hsh["time"]), method: hsh["method"]}
+  end
+
+  def convert_to_seconds(str)
+    min = (str =~ /.*M.*/) ? str.gsub(/M.*/, '').to_i : 0
+    min * 60 + str.gsub(/.*M/, '').to_f
   end
 
 #  def from_json(json)
